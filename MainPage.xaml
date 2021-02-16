@@ -1,0 +1,29 @@
+﻿<Page
+    x:Class="Hotel_Services.MainPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:Hotel_Services"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d"
+    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+
+    <Grid>
+        <Grid.Background>White</Grid.Background>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition></ColumnDefinition>
+            <ColumnDefinition Width="800"></ColumnDefinition>
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="100"></RowDefinition>
+            <RowDefinition Height="800"></RowDefinition>
+            <RowDefinition Height="100"></RowDefinition>
+        </Grid.RowDefinitions>
+        <TextBlock x:Name="Headline1" Grid.Column="0" Grid.Row="1" TextWrapping="Wrap" Margin="100,200,800,100" SelectionHighlightColor="#FF0087F1" Foreground="Black" FontSize="48" ManipulationMode="System" Grid.ColumnSpan="2" Grid.RowSpan="2" Text="Velkommen til Hotell (...)! Logg inn ved å klikke på din stilling =)"  />
+        <StackPanel Grid.Column="1" Grid.Row="1" Padding="10" Margin="128,0,128,188">
+            <Button x:Name="ButtonService" Click="HomeButton_OnClick" PointerEntered="Button_OnPointerEntered" PointerExited="Button_OnPointerExited" Content="Service Worker" HorizontalAlignment="Center" BorderBrush="Black" Height="75" Width="400" FontSize="34" Foreground="Black" Margin="0,225,0,10" VerticalAlignment="Center" FocusVisualPrimaryBrush="Black" Background="White" FocusVisualSecondaryBrush="White"/>
+            <Button x:Name="ButtonCleaner" Click="HomeButton_OnClick" PointerEntered="Button_OnPointerEntered" PointerExited="Button_OnPointerExited" Content="Cleaner" BorderBrush="Black" HorizontalAlignment="Center"  Height="75" Width="400" Foreground="Black" FontSize="34" FocusVisualPrimaryBrush="Black" Margin="0,0,0,10" Background="White" FocusVisualSecondaryBrush="White"/>
+            <Button x:Name="ButtonMaintenance" Click="HomeButton_OnClick" PointerEntered="Button_OnPointerEntered" PointerExited="Button_OnPointerExited" Content="Maintenance Worker" HorizontalAlignment="Center" BorderBrush="Black" Height="75" Width="400" Foreground="Black" FontSize="34" FocusVisualPrimaryBrush="Black" Background="White" FocusVisualSecondaryBrush="White"/>
+        </StackPanel>
+    </Grid>
+</Page>
