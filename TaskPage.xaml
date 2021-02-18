@@ -13,15 +13,22 @@
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="Auto"></ColumnDefinition>
             <ColumnDefinition Width="Auto"></ColumnDefinition>
-            <ColumnDefinition Width="Auto"></ColumnDefinition>
         </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
             <RowDefinition Height="100"></RowDefinition>
             <RowDefinition Height="Auto"></RowDefinition>
         </Grid.RowDefinitions>
         <StackPanel Grid.Column="0" Grid.Row="0" Orientation="Horizontal">
-            <Button x:Name="LogoutButton" Width="150" Height="50" Click="LogoutButton_OnClick" PointerEntered="Button_OnPointerEntered" PointerExited="Button_OnPointerExited" Background="White" BorderBrush="Black" Margin="25" Content="Logg ut" FontSize="24"></Button>
-            <TextBlock x:Name="HeaderText" Margin="25" Text="{x:Bind employee.EmployeeType}" TextWrapping="Wrap" FontSize="24"></TextBlock>
+            <Button x:Name="LogoutButton" Width="150" Height="50" Click="LogoutButton_OnClick" PointerEntered="Button_OnPointerEntered" PointerExited="Button_OnPointerExited" Background="White" BorderBrush="Black" Margin="25" Content="Log out" FontSize="24"></Button>
+        </StackPanel>
+        <StackPanel Grid.Column="1" Grid.Row="0" Orientation="Horizontal">
+            <TextBlock x:Name="HeaderText" Margin="25" Text="{x:Bind CurrentEmployee.EmployeeType}" TextWrapping="Wrap" FontSize="24"></TextBlock>
+        </StackPanel>
+        <StackPanel x:Name="TaskPanel" Grid.Column="0" Grid.Row="1" Orientation="Vertical" BorderBrush="Black" BorderThickness="0,0,5,0">
+            <TextBlock Text="{x:Bind TaskDescriptor}" TextWrapping="Wrap" Margin="25" FontSize="20" />
+            <ListView x:Name="TaskView" Margin="25" BorderBrush="Black" IsItemClickEnabled="True" SelectionChanged="TaskItems_OnSelectionChanged"></ListView>
+        </StackPanel>
+        <StackPanel x:Name="Subtasks" Grid.Column="1" Grid.Row="1" Orientation="Vertical" HorizontalAlignment="Center" Margin="0,220,0,-220">
         </StackPanel>
     </Grid>
 </Page>
