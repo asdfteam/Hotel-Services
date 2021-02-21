@@ -3,7 +3,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Net.Http;
-using Windows.Foundation.Collections;
+using System.Threading;
+using System.Threading.Tasks;
 using Windows.UI;
 using Windows.UI.Core;
 using Windows.UI.Xaml;
@@ -17,8 +18,7 @@ using Newtonsoft.Json;
 
 /*
  * TODOS:
- * Finish 'Submit' action.
- * Do reload of rooms, maybe async reload with timer?
+ * Notes on rooms.
  * Graphics and colors.
  *
  */
@@ -30,8 +30,9 @@ namespace Hotel_Services
     {
         public string FixedUri = "http://localhost:5000";
 
-        public CoreCursor Cursor { get; }
-        public CoreCursor CursorBeforePointerEntered { get; private set; }
+        public CoreCursor HandCursor { get; }
+        public CoreCursor LoadCursor { get; }
+        public CoreCursor PointerCursor { get; }
         public Employee CurrentEmployee { get; private set; }
         public HttpClient Client { get; } = new HttpClient();
         public HttpClientImpl ClientImpl { get; }
@@ -39,13 +40,24 @@ namespace Hotel_Services
         public string TaskDescriptor { get; set; }
         public List<Room> Rooms { get; set; }
         public Room CurrentRoom { get; set; }
-
+        public Timer RequestTimer { get; }
         public TaskPage()
         {
             InitializeComponent();
-            Cursor = new CoreCursor(CoreCursorType.Hand, 1);
+            PointerCursor = new CoreCursor(CoreCursorType.Arrow, 0);
+            HandCursor = new CoreCursor(CoreCursorType.Hand, 1);
+            LoadCursor = new CoreCursor(CoreCursorType.Wait, 2);
             ClientImpl = new HttpClientImpl(Client);
+            RequestTimer = new Timer(TimerCallback, null, (int) TimeSpan.FromSeconds(30).TotalMilliseconds,
+                Timeout.Infinite);
             TaskDescriptor = "Looking for tasks...";
+        }
+
+        private async void TimerCallback(object state)
+        {
+            Rooms = await GetRoomsRest();
+            await Windows.ApplicationModel.Core.CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(
+                CoreDispatcherPriority.Normal, UpdateTaskView);
         }
 
         protected override void OnNavigatedTo(NavigationEventArgs e)
@@ -57,15 +69,14 @@ namespace Hotel_Services
             }
         }
 
-        private void Button_OnPointerEntered(object sender, PointerRoutedEventArgs e)
+        private void OnPointerEnteredEventHandler(object sender, PointerRoutedEventArgs e)
         {
-            CursorBeforePointerEntered = Window.Current.CoreWindow.PointerCursor;
-            Window.Current.CoreWindow.PointerCursor = Cursor;
+            Window.Current.CoreWindow.PointerCursor = HandCursor;
         }
 
-        private void Button_OnPointerExited(object sender, PointerRoutedEventArgs e)
+        private void OnPointerExitedEventHandler(object sender, PointerRoutedEventArgs e)
         {
-            Window.Current.CoreWindow.PointerCursor = CursorBeforePointerEntered;
+            Window.Current.CoreWindow.PointerCursor = PointerCursor;
         }
 
         private async void LogoutButton_OnClick(object sender, RoutedEventArgs e)
@@ -79,8 +90,8 @@ namespace Hotel_Services
             };
 
             var result = await logoutDialog.ShowAsync(); //Venter på brukerklikk
-
             if (result != ContentDialogResult.Primary) return;
+            RequestTimer.Dispose();
             CurrentEmployee = null;
             CurrentRoom = null;
             Rooms.Clear();
@@ -90,37 +101,12 @@ namespace Hotel_Services
         private async void TaskPage_OnLoaded(object sender, RoutedEventArgs e)
         {
             TaskList = ComputeTasks();
-            Window.Current.CoreWindow.PointerCursor = new CoreCursor(CoreCursorType.Wait, 2);
+            Rooms = await GetRoomsRest();
+            UpdateTaskView();
 
-            var relativeUri = $"/rooms?status={CurrentEmployee.EmployeeType}";
-            var response = await ClientImpl.Get(FixedUri + relativeUri);
-            if (!response.IsSuccessStatusCode) throw new Exception("Something went wrong...");
-            Rooms = TransformHttpContent(response.Content);
-            
-            Debug.Assert(TaskView.Items != null, "TaskItems.Items == null");
-            foreach (var block in Rooms.Select(room => new TextBlock
-            {
-                Text = $"Room {room.RoomNumber}"
-            }))
-            {
-                TaskView.Items.Add(block);
-            }
             TaskView.ItemClick += TaskViewOnViewClick;
-            TaskView.Items.VectorChanged += ItemsOnVectorChanged;
-            TaskView.PointerEntered += Button_OnPointerEntered;
-            TaskView.PointerExited += Button_OnPointerExited;
-
-            TaskDescriptor = (TaskView.Items.Count != 0)
-                ? $"Found {TaskView.Items.Count} available tasks"
-                : "No available tasks, hooray!";
-            Bindings.Update();
-            Window.Current.CoreWindow.PointerCursor = new CoreCursor(CoreCursorType.Arrow, 3);
-            
-        }
-
-        private void ItemsOnVectorChanged(IObservableVector<object> sender, IVectorChangedEventArgs @event)
-        {
-            //Forandre listen på skjermen.
+            TaskView.PointerEntered += OnPointerEnteredEventHandler;
+            TaskView.PointerExited += OnPointerExitedEventHandler;
         }
 
         private void TaskItems_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -159,6 +145,8 @@ namespace Hotel_Services
                     BorderThickness = new Thickness(2),
                     Margin = new Thickness(0, 0,0,0),
                 };
+                checktask.PointerEntered += OnPointerEnteredEventHandler;
+                checktask.PointerExited += OnPointerExitedEventHandler;
                 subStackPanel.Children.Add(subtask);
                 subStackPanel.Children.Add(checktask);
                 Subtasks.Children.Add(subStackPanel);
@@ -179,14 +167,15 @@ namespace Hotel_Services
                     Content = new TextBlock {Text = "Not all tasks are completed..."},
                 },
             };
-            submitButton.PointerEntered += Button_OnPointerEntered;
-            submitButton.PointerExited += Button_OnPointerExited;
+            submitButton.PointerEntered += OnPointerEnteredEventHandler;
+            submitButton.PointerExited += OnPointerExitedEventHandler;
             submitButton.Click += SubmitButtonOnClick;
             Subtasks.Children.Add(submitButton);
         }
 
         private async void SubmitButtonOnClick(object sender, RoutedEventArgs e)
         {
+            
             var button = sender as Button;
             if (!VerifyCheckmarks()) return;
             button?.Flyout?.Hide();
@@ -197,13 +186,44 @@ namespace Hotel_Services
                 PrimaryButtonText = "Submit",
                 SecondaryButtonText = "Cancel"
             };
+            submitDialog.PointerEntered += OnPointerExitedEventHandler;
+            submitDialog.PointerExited += OnPointerExitedEventHandler;
             var result = await submitDialog.ShowAsync();
             if (result != ContentDialogResult.Primary) return;
-            CurrentRoom.RoomStatus = "AVAILABLE";
 
-            var relativeUri = $"/rooms/{CurrentRoom.RoomNumber}?newStatus={CurrentRoom.RoomStatus}";
-            var response = await ClientImpl.Put(FixedUri + relativeUri);
-            //responseting her =)
+            var response = await PutRoomRest();
+
+            if (response)
+            {
+                //Give user response that it was successful.
+                CurrentRoom = null;
+                Subtasks.Children.Clear();
+                Rooms = await GetRoomsRest();
+                UpdateTaskView();
+            }
+            else
+            {
+                //Not successful
+            }
+        }
+
+        private void UpdateTaskView()
+        {
+            Window.Current.CoreWindow.PointerCursor = LoadCursor;
+            Debug.Assert(TaskView.Items != null, "TaskItems.Items == null");
+            TaskView.Items.Clear();
+            foreach (var block in Rooms.Select(room => new TextBlock
+            {
+                Text = $"Room {room.RoomNumber}"
+            }))
+            {
+                TaskView.Items.Add(block);
+            }
+            TaskDescriptor = (TaskView.Items.Count != 0)
+                ? $"Found {TaskView.Items.Count} available tasks"
+                : "No available tasks, hooray!";
+            Bindings.Update();
+            Window.Current.CoreWindow.PointerCursor = PointerCursor;
         }
 
         private bool VerifyCheckmarks()
@@ -259,6 +279,21 @@ namespace Hotel_Services
         {
             var scontent = content.ReadAsStringAsync();
             return JsonConvert.DeserializeObject<List<Room>>(scontent.Result);
-        } 
+        }
+
+        private async Task<List<Room>> GetRoomsRest()
+        {
+            var relativeUri = $"/rooms?status={CurrentEmployee.EmployeeType}";
+            var response = await ClientImpl.Get(FixedUri + relativeUri);
+            if (!response.IsSuccessStatusCode) throw new Exception("Something went wrong...");
+            return TransformHttpContent(response.Content);
+        }
+
+        private async Task<bool> PutRoomRest()
+        {
+            var relativeUri = $"/rooms/{CurrentRoom.RoomNumber}?newStatus=AVAILABLE";
+            var response = await ClientImpl.Put(FixedUri + relativeUri);
+            return response.IsSuccessStatusCode;
+        }
     }
 }

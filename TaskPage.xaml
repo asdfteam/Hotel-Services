@@ -9,7 +9,7 @@
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
     Loaded="TaskPage_OnLoaded">
 
-    <Grid>
+    <Grid x:Name="MainGrid">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="Auto"></ColumnDefinition>
             <ColumnDefinition Width="Auto"></ColumnDefinition>
@@ -19,7 +19,7 @@
             <RowDefinition Height="Auto"></RowDefinition>
         </Grid.RowDefinitions>
         <StackPanel Grid.Column="0" Grid.Row="0" Orientation="Horizontal">
-            <Button x:Name="LogoutButton" Width="150" Height="50" Click="LogoutButton_OnClick" PointerEntered="Button_OnPointerEntered" PointerExited="Button_OnPointerExited" Background="White" BorderBrush="Black" Margin="25" Content="Log out" FontSize="24"></Button>
+            <Button x:Name="LogoutButton" Width="150" Height="50" Click="LogoutButton_OnClick" PointerEntered="OnPointerEnteredEventHandler" PointerExited="OnPointerExitedEventHandler" Background="White" BorderBrush="Black" Margin="25" Content="Log out" FontSize="24"></Button>
         </StackPanel>
         <StackPanel Grid.Column="1" Grid.Row="0" Orientation="Horizontal">
             <TextBlock x:Name="HeaderText" Margin="25" Text="{x:Bind CurrentEmployee.EmployeeType}" TextWrapping="Wrap" FontSize="24"></TextBlock>
