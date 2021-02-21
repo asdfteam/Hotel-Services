@@ -15,8 +15,8 @@ namespace Hotel_Services
     public sealed partial class MainPage : Page
     {
         private readonly CoreCursor _coreCursor;
-        CoreCursor _cursorBeforePointerEntered = null;
-        private Employee employee;
+        CoreCursor _cursorBeforePointerEntered;
+        private Employee _employee;
 
         public MainPage()
         {
@@ -42,18 +42,27 @@ namespace Hotel_Services
             switch (button.Name)
             {
                 case "ButtonService":
-                    employee = new Employee(EmployeeType.ServiceWorker);
+                    _employee = new Employee
+                    {
+                        EmployeeType = "SERVICEWORKER"
+                    };
                     break;
                 case "ButtonCleaner":
-                    employee = new Employee(EmployeeType.Cleaner);
+                    _employee = new Employee
+                    {
+                        EmployeeType = "CLEANER"
+                    };
                     break;
                 case "ButtonMaintenance":
-                    employee = new Employee(EmployeeType.Maintainer);
+                    _employee = new Employee
+                    {
+                        EmployeeType = "MAINTAINER"
+                    };
                     break;
             }
 
             //Navigerer til ny side og sender ref av employee.
-            Frame.Navigate(typeof(TaskPage), employee);
+            Frame.Navigate(typeof(TaskPage), _employee);
         }
     }
 }

@@ -3,21 +3,25 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Net.Http;
-using System.Threading.Tasks;
 using Windows.Foundation.Collections;
 using Windows.UI;
 using Windows.UI.Core;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Controls.Primitives;
-using Windows.UI.Xaml.Documents;
 using Windows.UI.Xaml.Input;
 using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Navigation;
 using HotelLibrary;
 using Newtonsoft.Json;
 
-// The Blank Page item template is documented at https://go.microsoft.com/fwlink/?LinkId=234238
+/*
+ * TODOS:
+ * Finish 'Submit' action.
+ * Do reload of rooms, maybe async reload with timer?
+ * Graphics and colors.
+ *
+ */
 
 namespace Hotel_Services
 {
@@ -26,24 +30,22 @@ namespace Hotel_Services
     {
         public string FixedUri = "http://localhost:5000";
 
-        private readonly CoreCursor _coreCursor;
-        CoreCursor _cursorBeforePointerEntered;
+        public CoreCursor Cursor { get; }
+        public CoreCursor CursorBeforePointerEntered { get; private set; }
         public Employee CurrentEmployee { get; private set; }
-        private readonly HttpClient _httpClient = new HttpClient();
+        public HttpClient Client { get; } = new HttpClient();
         public HttpClientImpl ClientImpl { get; }
         public List<string> TaskList { get; private set; }
-
-
         public string TaskDescriptor { get; set; }
         public List<Room> Rooms { get; set; }
         public Room CurrentRoom { get; set; }
 
         public TaskPage()
         {
-            this.InitializeComponent();
-            _coreCursor = new CoreCursor(CoreCursorType.Hand, 1);
-            ClientImpl = new HttpClientImpl(_httpClient);
-
+            InitializeComponent();
+            Cursor = new CoreCursor(CoreCursorType.Hand, 1);
+            ClientImpl = new HttpClientImpl(Client);
+            TaskDescriptor = "Looking for tasks...";
         }
 
         protected override void OnNavigatedTo(NavigationEventArgs e)
@@ -57,14 +59,13 @@ namespace Hotel_Services
 
         private void Button_OnPointerEntered(object sender, PointerRoutedEventArgs e)
         {
-            _cursorBeforePointerEntered = Window.Current.CoreWindow.PointerCursor;
-            Window.Current.CoreWindow.PointerCursor = _coreCursor;
+            CursorBeforePointerEntered = Window.Current.CoreWindow.PointerCursor;
+            Window.Current.CoreWindow.PointerCursor = Cursor;
         }
-
 
         private void Button_OnPointerExited(object sender, PointerRoutedEventArgs e)
         {
-            Window.Current.CoreWindow.PointerCursor = _cursorBeforePointerEntered;
+            Window.Current.CoreWindow.PointerCursor = CursorBeforePointerEntered;
         }
 
         private async void LogoutButton_OnClick(object sender, RoutedEventArgs e)
@@ -82,77 +83,39 @@ namespace Hotel_Services
             if (result != ContentDialogResult.Primary) return;
             CurrentEmployee = null;
             CurrentRoom = null;
+            Rooms.Clear();
             Frame.Navigate(typeof(MainPage));
         }
 
-        private void TaskPage_OnLoaded(object sender, RoutedEventArgs e)
+        private async void TaskPage_OnLoaded(object sender, RoutedEventArgs e)
         {
-
             TaskList = ComputeTasks();
-            /*
-            _httpClientImpl = new HttpClientImpl(_httpClient);
-            var relativeuri = "/service/rooms/" + _employee.EmployeeType.ToString();
-            var response = await _httpClientImpl.Get(FixedUri + relativeuri);
-             */
-            var room1 = new Room(101, 1, 1);
-            room1.SetStatus(RoomStatus.Maintenance);
-            var room2 = new Room(102, 1, 1);
-            room2.SetStatus(RoomStatus.Cleaning);
-            var room3 = new Room(103, 1, 1);
-            room3.SetStatus(RoomStatus.Busy);
-            var room4 = new Room(104, 1, 1);
-            room4.SetStatus(RoomStatus.Maintenance);
-            var room5 = new Room(105, 1, 1);
-            room5.SetStatus(RoomStatus.Cleaning);
-            var room6 = new Room(106, 1, 1);
-            room6.SetStatus(RoomStatus.Service);
-            var room7 = new Room(107, 1, 1);
-            Rooms = new List<Room>
-            {
-                room1,
-                room2,
-                room3,
-                room4,
-                room5,
-                room6,
-                room7
-            };
+            Window.Current.CoreWindow.PointerCursor = new CoreCursor(CoreCursorType.Wait, 2);
 
-            var identifyStatus = RoomStatus.Available;
-
-            switch (CurrentEmployee.EmployeeType)
+            var relativeUri = $"/rooms?status={CurrentEmployee.EmployeeType}";
+            var response = await ClientImpl.Get(FixedUri + relativeUri);
+            if (!response.IsSuccessStatusCode) throw new Exception("Something went wrong...");
+            Rooms = TransformHttpContent(response.Content);
+            
+            Debug.Assert(TaskView.Items != null, "TaskItems.Items == null");
+            foreach (var block in Rooms.Select(room => new TextBlock
             {
-                case EmployeeType.Cleaner:
-                    identifyStatus = RoomStatus.Cleaning;
-                    break;
-                case EmployeeType.Maintainer:
-                    identifyStatus = RoomStatus.Maintenance;
-                    break;
-                case EmployeeType.ServiceWorker:
-                    identifyStatus = RoomStatus.Service;
-                    break;
-                case EmployeeType.FrontDeskWorker:
-                    break;
-                default:
-                    throw new ArgumentOutOfRangeException();
-            }
-            Debug.Assert(TaskView.Items != null, "TaskItems.Items != null");
-            foreach (var room in Rooms.Where(room => room.Status == identifyStatus))
+                Text = $"Room {room.RoomNumber}"
+            }))
             {
-                var block = new TextBlock
-                {
-                    Text = $"Room {room.RoomNumber}"
-                };
-                
                 TaskView.Items.Add(block);
             }
             TaskView.ItemClick += TaskViewOnViewClick;
             TaskView.Items.VectorChanged += ItemsOnVectorChanged;
+            TaskView.PointerEntered += Button_OnPointerEntered;
+            TaskView.PointerExited += Button_OnPointerExited;
 
-            //Debug
             TaskDescriptor = (TaskView.Items.Count != 0)
                 ? $"Found {TaskView.Items.Count} available tasks"
                 : "No available tasks, hooray!";
+            Bindings.Update();
+            Window.Current.CoreWindow.PointerCursor = new CoreCursor(CoreCursorType.Arrow, 3);
+            
         }
 
         private void ItemsOnVectorChanged(IObservableVector<object> sender, IVectorChangedEventArgs @event)
@@ -175,6 +138,7 @@ namespace Hotel_Services
 
         private void TaskViewOnViewClick(object sender, ItemClickEventArgs e)
         {
+            Subtasks.Children.Clear();
             foreach (var task in TaskList)
             {
                 var subStackPanel = new StackPanel
@@ -235,9 +199,11 @@ namespace Hotel_Services
             };
             var result = await submitDialog.ShowAsync();
             if (result != ContentDialogResult.Primary) return;
-            CurrentRoom.Status = RoomStatus.Available;
-            var relativeUri = $"/service/rooms/{CurrentRoom.RoomNumber}";
-            //var response = ClientImpl.Put(FixedUri + relativeUri, JsonConvert.SerializeObject(CurrentRoom));
+            CurrentRoom.RoomStatus = "AVAILABLE";
+
+            var relativeUri = $"/rooms/{CurrentRoom.RoomNumber}?newStatus={CurrentRoom.RoomStatus}";
+            var response = await ClientImpl.Put(FixedUri + relativeUri);
+            //responseting her =)
         }
 
         private bool VerifyCheckmarks()
@@ -265,24 +231,34 @@ namespace Hotel_Services
             var tasklist = new List<string>();
             switch (CurrentEmployee.EmployeeType)
             {
-                case EmployeeType.ServiceWorker:
+                case "SERVICEWORKER":
                     task1 = "Delivered food and drinks at the current room";
                     tasklist = new List<string> {task1};
                     break;
-                case EmployeeType.Cleaner:
+                case "CLEANER":
                     task1 = "Clean bathroom";
                     task2 = "Vacuum the carpet floor";
                     task3 = "Change the sheets";
                     tasklist = new List<string> {task1, task2, task3};
                     break;
-                case EmployeeType.Maintainer:
+                case "MAINTAINER":
                     task1 = "Check for damages in bathroom";
                     task2 = "Check for damages in living room";
                     task3 = "Check the airconditiong";
                     tasklist = new List<string> {task1, task2, task3};
                     break;
+                case "FRONTDESKWORKER":
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException();
             }
             return tasklist;
         }
+
+        private static List<Room> TransformHttpContent(HttpContent content)
+        {
+            var scontent = content.ReadAsStringAsync();
+            return JsonConvert.DeserializeObject<List<Room>>(scontent.Result);
+        } 
     }
 }
