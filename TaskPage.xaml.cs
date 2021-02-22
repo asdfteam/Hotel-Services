@@ -38,11 +38,15 @@ namespace Hotel_Services
         public HttpClientImpl ClientImpl { get; }
         public List<string> TaskList { get; private set; }
         public string TaskDescriptor { get; set; }
+        public string NoteContainer { get; set; }
+        public string StatusContainer { get; set; }
         public List<Room> Rooms { get; set; }
         public Room CurrentRoom { get; set; }
         public Timer RequestTimer { get; }
         public TaskPage()
         {
+            NoteContainer = null;
+            StatusContainer = null;
             InitializeComponent();
             PointerCursor = new CoreCursor(CoreCursorType.Arrow, 0);
             HandCursor = new CoreCursor(CoreCursorType.Hand, 1);
@@ -152,6 +156,20 @@ namespace Hotel_Services
                 Subtasks.Children.Add(subStackPanel);
             }
 
+            var statusRolldown = new ComboBox
+            {
+                Text = "Choose a new status:",
+                Items = { "AVAILABLE", "CLEANING", "MAINTENANCE", "SERVICE", "BUSY" }
+            };
+            statusRolldown.PointerExited += OnPointerExitedEventHandler;
+            statusRolldown.PointerEntered += OnPointerEnteredEventHandler;
+            statusRolldown.LostFocus += StatusRolldownOnLostFocus;
+            statusRolldown.SelectionChanged += StatusRolldownOnSelectionChanged;
+            var notetask = new TextBox
+            {
+                PlaceholderText = "If you have any comments, please put them here:",
+            };
+            notetask.TextChanged += NotetaskOnTextChanged;
             var submitButton = new Button
             {
                 Content = "Submit",
@@ -170,7 +188,25 @@ namespace Hotel_Services
             submitButton.PointerEntered += OnPointerEnteredEventHandler;
             submitButton.PointerExited += OnPointerExitedEventHandler;
             submitButton.Click += SubmitButtonOnClick;
+            Subtasks.Children.Add(statusRolldown);
+            Subtasks.Children.Add(notetask);
             Subtasks.Children.Add(submitButton);
+        }
+
+        private void StatusRolldownOnSelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (sender is ComboBox dropdown) StatusContainer = dropdown.SelectedItem as string;
+        }
+
+        private void StatusRolldownOnLostFocus(object sender, RoutedEventArgs e)
+        {
+            if (sender is ComboBox dropdown) dropdown.IsDropDownOpen = false;
+        }
+
+        private void NotetaskOnTextChanged(object sender, TextChangedEventArgs e)
+        {
+            var b = sender as TextBox;
+            NoteContainer = b?.Text;
         }
 
         private async void SubmitButtonOnClick(object sender, RoutedEventArgs e)
@@ -283,15 +319,15 @@ namespace Hotel_Services
 
         private async Task<List<Room>> GetRoomsRest()
         {
-            var relativeUri = $"/rooms?status={CurrentEmployee.EmployeeType}";
+            var relativeUri = $"/rooms?type={CurrentEmployee.EmployeeType}";
             var response = await ClientImpl.Get(FixedUri + relativeUri);
-            if (!response.IsSuccessStatusCode) throw new Exception("Something went wrong...");
+            if (!response.IsSuccessStatusCode) throw new Exception(response.StatusCode.ToString());
             return TransformHttpContent(response.Content);
         }
 
         private async Task<bool> PutRoomRest()
         {
-            var relativeUri = $"/rooms/{CurrentRoom.RoomNumber}?newStatus=AVAILABLE";
+            var relativeUri = $"/rooms/{CurrentRoom.RoomNumber}?newStatus={StatusContainer}&note={NoteContainer}";
             var response = await ClientImpl.Put(FixedUri + relativeUri);
             return response.IsSuccessStatusCode;
         }
