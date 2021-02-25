@@ -135,7 +135,6 @@ namespace Hotel_Services
                 {
                     Orientation = Orientation.Horizontal,
                     HorizontalAlignment = HorizontalAlignment.Left,
-                    Margin = new Thickness(0,5,0,0)
                 };
                 var subtask = new TextBlock
                 {
@@ -147,7 +146,7 @@ namespace Hotel_Services
                     IsChecked = false,
                     BorderBrush = new SolidColorBrush(Colors.Black),
                     BorderThickness = new Thickness(2),
-                    Margin = new Thickness(0, 0,0,0),
+                    Margin = new Thickness(2, 0,0,0),
                 };
                 checktask.PointerEntered += OnPointerEnteredEventHandler;
                 checktask.PointerExited += OnPointerExitedEventHandler;
@@ -159,15 +158,16 @@ namespace Hotel_Services
             var statusRolldown = new ComboBox
             {
                 Text = "Choose a new status:",
-                Items = { "AVAILABLE", "CLEANING", "MAINTENANCE", "SERVICE", "BUSY" }
+                Items = { "AVAILABLE", "CLEANING", "MAINTENANCE", "SERVICE", "BUSY" },
+                Margin = new Thickness(10)
             };
             statusRolldown.PointerExited += OnPointerExitedEventHandler;
             statusRolldown.PointerEntered += OnPointerEnteredEventHandler;
-            statusRolldown.LostFocus += StatusRolldownOnLostFocus;
             statusRolldown.SelectionChanged += StatusRolldownOnSelectionChanged;
             var notetask = new TextBox
             {
                 PlaceholderText = "If you have any comments, please put them here:",
+                Margin = new Thickness(10)
             };
             notetask.TextChanged += NotetaskOnTextChanged;
             var submitButton = new Button
@@ -196,11 +196,6 @@ namespace Hotel_Services
         private void StatusRolldownOnSelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (sender is ComboBox dropdown) StatusContainer = dropdown.SelectedItem as string;
-        }
-
-        private void StatusRolldownOnLostFocus(object sender, RoutedEventArgs e)
-        {
-            if (sender is ComboBox dropdown) dropdown.IsDropDownOpen = false;
         }
 
         private void NotetaskOnTextChanged(object sender, TextChangedEventArgs e)
@@ -250,7 +245,8 @@ namespace Hotel_Services
             TaskView.Items.Clear();
             foreach (var block in Rooms.Select(room => new TextBlock
             {
-                Text = $"Room {room.RoomNumber}"
+                Text = $"Room {room.RoomNumber}",
+                Margin = new Thickness(0,0,0,3),
             }))
             {
                 TaskView.Items.Add(block);

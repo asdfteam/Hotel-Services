@@ -9,7 +9,7 @@
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
     Loaded="TaskPage_OnLoaded">
 
-    <Grid x:Name="MainGrid">
+    <Grid x:Name="MainGrid" Background="AliceBlue">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="Auto"></ColumnDefinition>
             <ColumnDefinition Width="Auto"></ColumnDefinition>
@@ -18,17 +18,17 @@
             <RowDefinition Height="100"></RowDefinition>
             <RowDefinition Height="Auto"></RowDefinition>
         </Grid.RowDefinitions>
-        <StackPanel Grid.Column="0" Grid.Row="0" Orientation="Horizontal">
+        <StackPanel Grid.Column="0" Grid.Row="0" Orientation="Horizontal" BorderBrush="Black" BorderThickness="0,0,5,0">
             <Button x:Name="LogoutButton" Width="150" Height="50" Click="LogoutButton_OnClick" PointerEntered="OnPointerEnteredEventHandler" PointerExited="OnPointerExitedEventHandler" Background="White" BorderBrush="Black" Margin="25" Content="Log out" FontSize="24"></Button>
         </StackPanel>
-        <StackPanel Grid.Column="1" Grid.Row="0" Orientation="Horizontal">
+        <StackPanel Grid.Column="1" Grid.Row="0" Width="{x:Bind MainGrid.ActualWidth}" Orientation="Horizontal">
             <TextBlock x:Name="HeaderText" Margin="25" Text="{x:Bind CurrentEmployee.EmployeeType}" TextWrapping="Wrap" FontSize="24"></TextBlock>
         </StackPanel>
-        <StackPanel x:Name="TaskPanel" Grid.Column="0" Grid.Row="1" Orientation="Vertical" BorderBrush="Black" BorderThickness="0,0,5,0">
-            <TextBlock Text="{x:Bind TaskDescriptor}" TextWrapping="Wrap" Margin="25" FontSize="20" />
+        <StackPanel x:Name="TaskPanel" Height="{x:Bind MainGrid.ActualHeight}" Grid.Column="0" Grid.Row="1" Orientation="Vertical" BorderBrush="Black" BorderThickness="0,0,5,0">
+            <TextBlock Text="{x:Bind TaskDescriptor}" TextWrapping="WrapWholeWords" Margin="25" FontSize="20" />
             <ListView x:Name="TaskView" Margin="25" BorderBrush="Black" IsItemClickEnabled="True" SelectionChanged="TaskItems_OnSelectionChanged"></ListView>
         </StackPanel>
-        <StackPanel x:Name="Subtasks" Grid.Column="1" Grid.Row="1" Orientation="Vertical" HorizontalAlignment="Center" Margin="0,220,0,-220">
+        <StackPanel x:Name="Subtasks" Grid.Column="1" Grid.Row="1" Orientation="Vertical" HorizontalAlignment="Left" Margin="10,220,0,-220">
         </StackPanel>
     </Grid>
 </Page>
