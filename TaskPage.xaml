@@ -26,7 +26,7 @@
         </StackPanel>
         <StackPanel x:Name="TaskPanel" Height="{x:Bind MainGrid.ActualHeight}" Grid.Column="0" Grid.Row="1" Orientation="Vertical" BorderBrush="Black" BorderThickness="0,0,5,0">
             <TextBlock Text="{x:Bind TaskDescriptor}" TextWrapping="WrapWholeWords" Margin="25" FontSize="20" />
-            <ListView x:Name="TaskView" Margin="25" BorderBrush="Black" IsItemClickEnabled="True" SelectionChanged="TaskItems_OnSelectionChanged"></ListView>
+            <ListView x:Name="TaskView" Margin="25" BorderBrush="Black" IsItemClickEnabled="True"></ListView>
         </StackPanel>
         <StackPanel x:Name="Subtasks" Grid.Column="1" Grid.Row="1" Orientation="Vertical" HorizontalAlignment="Left" Margin="10,220,0,-220">
         </StackPanel>

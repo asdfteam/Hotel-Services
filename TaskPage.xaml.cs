@@ -106,29 +106,40 @@ namespace Hotel_Services
         {
             TaskList = ComputeTasks();
             Rooms = await GetRoomsRest();
-            UpdateTaskView();
+            await Windows.ApplicationModel.Core.CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(
+                CoreDispatcherPriority.Normal, UpdateTaskView);
 
             TaskView.ItemClick += TaskViewOnViewClick;
             TaskView.PointerEntered += OnPointerEnteredEventHandler;
             TaskView.PointerExited += OnPointerExitedEventHandler;
         }
 
-        private void TaskItems_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            if (!(TaskView.SelectedItem is TextBlock selected)) return;
-            var substr = selected.Text.Substring(5);
-            Rooms.ForEach(room =>
-            {
-                if (room.RoomNumber == int.Parse(substr))
-                {
-                    CurrentRoom = room;
-                }
-            });
-        }
-
         private void TaskViewOnViewClick(object sender, ItemClickEventArgs e)
         {
             Subtasks.Children.Clear();
+            var item = (TextBlock) e.ClickedItem;
+            if (item != null)
+            {
+                var substr = item.Text.Substring(5);
+                Rooms.ForEach(room =>
+                {
+                    if (room.RoomNumber == int.Parse(substr))
+                    {
+                        CurrentRoom = room;
+                    }
+                });
+            }
+            if (CurrentRoom != null)
+            {
+                var comment = new TextBlock
+                {
+                    Text = $"Last comment: \n {CurrentRoom.Note}",
+                    FontSize = 24,
+                    Margin = new Thickness(10)
+                };
+                Subtasks.Children.Add(comment);
+            }
+
             foreach (var task in TaskList)
             {
                 var subStackPanel = new StackPanel
